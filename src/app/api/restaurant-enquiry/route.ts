@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { restaurantEnquiries } from "@/db/schema";
 import { restaurantEnquirySchema } from "@/lib/validation";
 import { notifyOffice } from "@/lib/notify";
 
@@ -24,29 +22,17 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
+  const reference = Date.now();
 
   try {
-    const [inserted] = await db
-      .insert(restaurantEnquiries)
-      .values({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        date: data.date,
-        preferredTime: data.preferredTime,
-        guests: data.guests,
-        specialRequest: data.specialRequest || null,
-      })
-      .returning({ id: restaurantEnquiries.id });
-
     await notifyOffice(
-      `New Dock N' Dine enquiry #${inserted.id}`,
+      `New Dock N' Dine enquiry #${reference}`,
       `${data.name} · ${data.date} at ${data.preferredTime} · ${data.guests} guests · ${data.email} / ${data.phone}`
     );
 
-    return NextResponse.json({ ok: true, id: inserted.id });
+    return NextResponse.json({ ok: true, id: reference });
   } catch (error) {
-    console.error("[restaurant-enquiry] database error", error);
+    console.error("[restaurant-enquiry] notification error", error);
     return NextResponse.json(
       { error: "Something went wrong on our side. Please try again or call the restaurant." },
       { status: 500 }
